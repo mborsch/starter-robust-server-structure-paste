@@ -20,27 +20,35 @@ app.get("/pastes", (req, res) => {
   res.json({ data: pastes });
 });
 
+function bodyHasTextProperty(req, res, next) {
+  const { data: { text } = {} } = req.body;
+  if (text) {
+    return next();
+  }
+  next({
+    status: 400,
+    message: "A 'text' property is required.",
+  });
+}
+
 let lastPasteId = pastes.reduce((maxId, paste) => Math.max(maxId, paste.id), 0);
 
-app.post("/pastes", (req, res, next) => {
+app.post("/pastes", bodyHasTextProperty, (req, res, next) => {
   const { data: { name, syntax, exposure, expiration, text, user_id } = {} } =
     req.body;
-  if (text) {
-    const newPaste = {
-      id: ++lastPasteId,
-      name,
-      syntax,
-      exposure,
-      expiration,
-      text,
-      user_id,
-    };
 
-    pastes.push(newPaste);
-    res.status(201).json({ data: newPaste });
-  } else {
-    res.sendStatus(400);
-  }
+  const newPaste = {
+    id: ++lastPasteId,
+    name,
+    syntax,
+    exposure,
+    expiration,
+    text,
+    user_id,
+  };
+
+  pastes.push(newPaste);
+  res.status(201).json({ data: newPaste });
 });
 
 // Not found handler
@@ -51,7 +59,8 @@ app.use((request, response, next) => {
 // Error handler
 app.use((error, request, response, next) => {
   console.error(error);
-  response.send(error);
+  const { status = 500, message = "Something went wrong!" } = error;
+  response.status(status).json({ error: message });
 });
 
 module.exports = app;
