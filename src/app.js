@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+app.use(express.json());
 
 // TODO: Follow instructions in the checkpoint to implement ths API.
 const pastes = require("./data/pastes-data");
@@ -15,8 +16,27 @@ app.use("/pastes/:pasteId", (req, res, next) => {
   }
 });
 
-app.use("/pastes", (req, res) => {
+app.get("/pastes", (req, res) => {
   res.json({ data: pastes });
+});
+
+let lastPasteId = pastes.reduce((maxId, paste) => Math.max(maxId, paste.id), 0);
+
+app.post("/pastes", (req, res, next) => {
+  const { data: { name, syntax, exposure, expiration, text, user_id } = {} } =
+    req.body;
+  const newPaste = {
+    id: ++lastPasteId,
+    name,
+    syntax,
+    exposure,
+    expiration,
+    text,
+    user_id,
+  };
+
+  pastes.push(newPaste);
+  res.json({ data: newPaste });
 });
 
 // Not found handler
